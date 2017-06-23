@@ -36,6 +36,12 @@ class Network:
 		self.T = T 
 		self.rho = rho
 
+		self.rateLimit = None
+
+	def setRateLimit(self, rateLimit):
+
+		self.rateLimit = rateLimit
+
 	def buildNetwork(self):
 
 		f = open('starlib_v6.dat', 'r')
@@ -158,6 +164,14 @@ class Network:
 
 					rate *= self.y[inc[j]]
 
+				if (self.rateLimit != None):
+
+					if (rate > self.rateLimit):
+
+						print('limiting rates')
+
+						rate = self.rateLimit 
+
 				R[i] += rate
 
 		return R 
@@ -226,9 +240,9 @@ T = 3e9
 rho = 1e8
 net = Network(T, rho) 
 
-net.updateNuc('he4', 1)
-net.updateNuc('c12', 0)
-net.updateNuc('o16', 0)
+net.updateNuc('he4', 0)
+net.updateNuc('c12', 1)
+net.updateNuc('o16', 1)
 net.updateNuc('ne20', 0)
 net.updateNuc('mg24', 0)
 net.updateNuc('si28', 0)
@@ -238,8 +252,10 @@ net.buildNetwork()
 
 net.normalize()
 
+net.setRateLimit(1e8)
+
 N = 1000
-t = np.logspace(-12, -1, N+1)
+t = np.logspace(-12, -7, N+1)
 
 I = np.identity(net.N)
 
