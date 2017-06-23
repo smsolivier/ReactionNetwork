@@ -222,13 +222,13 @@ class Reaction:
 
 			return self.rate_f(T/1e9)*rho
 
-T = 1e9
+T = 3e9
 rho = 1e8
 net = Network(T, rho) 
 
-net.updateNuc('he4', 1)
-net.updateNuc('c12', 0)
-net.updateNuc('o16', 0)
+net.updateNuc('he4', 0)
+net.updateNuc('c12', 1)
+net.updateNuc('o16', 1)
 net.updateNuc('ne20', 0)
 net.updateNuc('mg24', 0)
 net.updateNuc('si28', 0)
@@ -239,7 +239,7 @@ net.buildNetwork()
 net.normalize()
 
 N = 1000
-t = np.logspace(-12, -1, N+1)
+t = np.logspace(-12, -7, N+1)
 
 I = np.identity(net.N)
 
@@ -248,7 +248,7 @@ allY = np.zeros((net.N, N+1))
 allY[:,0] = net.y
 
 maxiter = 10000
-tol = 1e-3
+tol = 1e-6
 
 for i in range(1, len(t)):
 
