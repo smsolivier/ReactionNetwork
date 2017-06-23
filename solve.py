@@ -136,7 +136,7 @@ class Network:
 
 	def buildR(self):
 
-		R = np.zeros(self.N)
+		R = np.zeros(self.N, dtype='float64')
 
 		for k in range(len(self.reaction)):
 
@@ -222,17 +222,17 @@ class Reaction:
 
 			return self.rate_f(T/1e9)*rho
 
-T = 3e9
+T = 1e9
 rho = 1e8
 net = Network(T, rho) 
 
 net.updateNuc('he4', 1)
 net.updateNuc('c12', 0)
-# net.updateNuc('o16', 0)
-# net.updateNuc('ne20', 0)
-# net.updateNuc('mg24', 0)
-# net.updateNuc('si28', 0)
-# net.updateNuc('ni56', 0)
+net.updateNuc('o16', 0)
+net.updateNuc('ne20', 0)
+net.updateNuc('mg24', 0)
+net.updateNuc('si28', 0)
+net.updateNuc('ni56', 0)
 
 net.buildNetwork()
 
@@ -247,8 +247,8 @@ allY = np.zeros((net.N, N+1))
 
 allY[:,0] = net.y
 
-maxiter = 10
-tol = 1e-6
+maxiter = 10000
+tol = 1e-3
 
 for i in range(1, len(t)):
 
