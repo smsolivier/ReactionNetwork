@@ -228,11 +228,11 @@ net = Network(T, rho)
 
 net.updateNuc('he4', 1)
 net.updateNuc('c12', 0)
-net.updateNuc('o16', 0)
-net.updateNuc('ne20', 0)
-net.updateNuc('mg24', 0)
-net.updateNuc('si28', 0)
-net.updateNuc('ni56', 0)
+# net.updateNuc('o16', 0)
+# net.updateNuc('ne20', 0)
+# net.updateNuc('mg24', 0)
+# net.updateNuc('si28', 0)
+# net.updateNuc('ni56', 0)
 
 net.buildNetwork()
 
@@ -247,23 +247,38 @@ allY = np.zeros((net.N, N+1))
 
 allY[:,0] = net.y
 
+maxiter = 10
+tol = 1e-6
+
 for i in range(1, len(t)):
 
 	dt = t[i] - t[i-1]
 
-	J = net.buildJ()
-	R = net.buildR()
+	y0 = np.copy(net.y)
 
-	A = I - J*dt
-	b = np.dot(I - J*dt, net.y) + dt*R 
+	for j in range(maxiter):
 
-	Y = np.linalg.solve(A, b)
+		ylag = np.copy(net.y)
 
-	net.y = np.copy(Y)
+		J = net.buildJ()
+		R = net.buildR()
 
-	for j in range(net.N):
+		A = I - J*dt
+		b = y0 + dt*R - dt*np.dot(J, net.y)
 
-		allY[j,i] = Y[j]
+		Y = np.linalg.solve(A, b)
+
+		net.y = np.copy(Y)
+
+		if (np.linalg.norm(net.y - ylag, 2) < tol):
+
+			break 
+		if (j == maxiter - 1):
+
+			print('maxiter reached')
+
+	# save result 
+	allY[:,i] = np.copy(net.y)
 
 print(np.sum(net.y))
 
