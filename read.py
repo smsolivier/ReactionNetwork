@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-import numpy as np
-import matplotlib.pyplot as plt 
-
 import sys 
 
 def chapter(label):
@@ -102,22 +99,33 @@ def readHeader(line):
 
 	return inc, out
 
-skip = 60 
+def readReaction():
 
-f = open('starlib_v6.dat', 'r')
+	skip = 60 
 
-srows = 0 
+	f = open('starlib_v6.dat', 'r')
 
-for line in f:
+	nuc = ['he4', 'c12']
 
-	inc, out = readHeader(line) 
+	for line in f:
 
-	if ('c12' in inc or 'c12' in out):
+		inc, out = readHeader(line) 
 
-		print(line.strip())
+		react = inc + out 
 
-	for i in range(skip):
+		throw = 0 
+		for i in range(len(react)):
 
-		f.next()
+			if not(react[i] in nuc):
 
-f.close()
+				throw = 1 
+
+		if (throw == 0):
+
+			print(line)
+
+		for i in range(skip):
+
+			next(f)
+
+	f.close()
