@@ -31,10 +31,22 @@ class Network:
 
 		self.N = 0 # number of nuclides in network 
 
+		self.A = np.array([]) # store atomic masses 
+
 		self.reaction = [] 
 
 		self.T = T 
 		self.rho = rho
+
+		self.rateLimit = None
+
+	def setRateLimit(self, rateLimit):
+
+		self.rateLimit = rateLimit
+
+	def addReaction(self, reaction):
+
+		self.reaction.append(reaction)
 
 	def buildNetwork(self):
 
@@ -80,7 +92,7 @@ class Network:
 
 		print('Number of Reactions =', len(self.reaction))
 
-	def updateNuc(self, name, y):
+	def updateNuc(self, name, A, y):
 		''' update a mass fraction in the list
 			add nuclide if not already there 
 		''' 
@@ -99,6 +111,7 @@ class Network:
 			self.nuc.append(Nuclide(name, y)) # create new nuclide object 
 			self.name.append(name)
 			self.y = np.append(self.y, y)
+			self.A = np.append(self.A, A)
 
 			self.N += 1 # update number of nuclides 
 
@@ -135,51 +148,71 @@ class Network:
 		return out 
 
 	def buildR(self):
+		''' build reaction reates vector ''' 
 
-		R = np.zeros(self.N)
+		R = np.zeros(self.N) # store reaction rates for each isotope 
 
+		# loop over reactions 
 		for k in range(len(self.reaction)):
 
 			mReact = self.reaction[k]
 
-			inc = self.getIndex(mReact.inc)
+			inc = self.getIndex(mReact.inc) # indeces of reactants 
 
+			# loop through all nuclides 
 			for i in range(net.N):
 
 				mNuc = self.nuc[i]
 
 				rate = 0 
 
+				# if mNuc in reactants or products 
 				if (mNuc.name in mReact.inc or mNuc.name in mReact.out):
 
+					# get the rate at given T, rho 
 					rate = mReact.getRate(mNuc.name, self.T, self.rho)
 
+				# multiple by Y 
 				for j in range(mReact.Nin):
 
 					rate *= self.y[inc[j]]
 
+				# apply limiter 
+				if (self.rateLimit != None):
+
+					if (rate > self.rateLimit):
+
+						print('limiting rates')
+
+						rate = self.rateLimit 
+
+				# add rate in 
 				R[i] += rate
 
 		return R 
 
 	def buildJ(self):
+		''' build jacobian matrix ''' 
 
-		# build jacobian 
 		J = np.zeros((self.N, self.N))
 
+		# loop through reactions 
 		for i in range(len(self.reaction)):
 
 			mReact = self.reaction[i]
 
-			inc = net.getIndex(mReact.inc)
-			out = net.getIndex(mReact.out)
+			inc = net.getIndex(mReact.inc) # reactants indices 
+			out = net.getIndex(mReact.out) # products indices 
 
-			ind = inc + out 
+			ind = inc + out # all isotopes involved in reaction 
 
+			# loop through all reactants + products 
 			for j in range(len(ind)):
 
+				# reactant Y's are in rates only 
 				for k in range(len(inc)):
 
+					# get derivative with respect to inc[k]
 					y = 1
 					for l in range(len(inc)):
 
@@ -191,11 +224,23 @@ class Network:
 
 		return J 
 
+	def massFracToMolFrac(self):
+
+		return self.y/self.A
+
+	def molFracToMassFrac(self):
+
+		return self.y*self.A
+
 	def normalize(self):
 
-		tot = np.sum(self.y)
+		mass = np.sum(self.y*self.A)
 
-		self.y /= tot
+		self.y /= mass
+
+	def checkConservation(self):
+
+		return np.sum(self.molFracToMassFrac())
 
 class Reaction:
 
@@ -209,43 +254,76 @@ class Reaction:
 		self.Nin = len(inc)
 		self.Nout = len(out) 
 
+		# if only one reactant => rate is decay constant 
+		if (self.Nin > 1):
+
+			rate *= rho 
+
+		self.ident = np.zeros(self.Nin)
+		for i in range(self.Nin):
+
+			self.ident[i] = self.inc.count(self.inc[i])
+
+		self.outdent = np.zeros(self.Nout)
+		for i in range(self.Nout):
+
+			self.outdent[i] = self.out.count(self.out[i])
+
 		# interpolate rates, temperatures 
 		self.rate_f = interp1d(T, rate)
 
+		self.Na = 6.022e23
+
 	def getRate(self, name, T, rho):		
 
+		# if a reactant 
 		if (name in self.inc):
 
-			return -self.rate_f(T/1e9)*rho
+			return -self.rate_f(T/1e9)
 
+		# if a product 
 		else:
 
-			return self.rate_f(T/1e9)*rho
+			return self.rate_f(T/1e9)/self.ident[0]
 
 T = 3e9
 rho = 1e8
 net = Network(T, rho) 
 
-net.updateNuc('he4', 1)
-net.updateNuc('c12', 0)
-net.updateNuc('o16', 0)
-net.updateNuc('ne20', 0)
-net.updateNuc('mg24', 0)
-net.updateNuc('si28', 0)
-net.updateNuc('ni56', 0)
+# net.updateNuc('1', 2, 1)
+# net.updateNuc('2', 1, 1)
+# net.updateNuc('3', 1, 0)
+# net.updateNuc('4', 1, 0)
+net.updateNuc('he4', 4, 0)
+net.updateNuc('c12', 12, 1)
+net.updateNuc('o16', 16, 1)
+net.updateNuc('ne20', 20, 0)
+net.updateNuc('mg24', 24, 0)
+net.updateNuc('si28', 28, 0)
+net.updateNuc('ni56', 56, 0)
 
 net.buildNetwork()
+# T = np.logspace(-1, 2, 10)
+# rate = np.ones(10)
+# net.addReaction(Reaction(T, rate, ['1', '2'], ['3', '4']))
+# net.addReaction(Reaction(T, rate/10, ['3', '4'], ['1', '2']))
+# net.addReaction(Reaction(T, rate/5, ['1', '1'], ['3', '4']))
+# net.addReaction(Reaction(T, rate*rho, ['1'], ['3', '4']))
 
-net.normalize()
+# net.normalize()
+
+# net.setRateLimit(1e8)
 
 N = 1000
-t = np.logspace(-12, -1, N+1)
+t = np.logspace(-12, -7, N+1)
 
 I = np.identity(net.N)
 
 allY = np.zeros((net.N, N+1))
 
-allY[:,0] = net.y
+allY[:,0] = np.copy(net.y)
+
+cons = np.zeros(N+1)
 
 for i in range(1, len(t)):
 
@@ -259,14 +337,46 @@ for i in range(1, len(t)):
 
 	Y = np.linalg.solve(A, b)
 
+	cons[i] = net.checkConservation()
+
+	allY[:,i] = Y
+
 	net.y = np.copy(Y)
 
-	for j in range(net.N):
+	# net.normalize()
 
-		allY[j,i] = Y[j]
+	# print(i/N, end='\r')
 
-print(np.sum(net.y))
+# maxiter = 100000
+# tol = 1e-6
 
+# for i in range(1, len(t)):
+
+# 	dt = t[i] - t[i-1] 
+
+# 	y0 = np.copy(net.y)
+
+# 	for j in range(maxiter):
+
+# 		yold = np.copy(net.y)
+
+# 		ynew = y0 + dt*net.buildR()
+
+# 		net.y = np.copy(ynew)
+
+# 		if (np.linalg.norm(ynew - yold, 2) < tol):
+
+# 			break 
+
+# 		if (j == maxiter - 1):
+
+# 			print('max iter reached')
+
+# 	allY[:,i] = np.copy(net.y)
+
+print(net.checkConservation())
+
+plt.figure()
 for i in range(net.N):
 
 	plt.loglog(t, allY[i,:], label=net.name[i])
