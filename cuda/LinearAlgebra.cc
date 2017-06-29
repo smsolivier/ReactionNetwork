@@ -14,8 +14,6 @@ vector<double> operator+(const vector<double> &A, const vector<double> &B) {
 		#pragma omp for private(i) schedule(dynamic, 1) nowait 
 		for (i=0; i<A.size(); i++) {
 
-			cout << i << endl; 
-
 			C[i] = A[i] + B[i]; 
 
 		}

@@ -5,27 +5,33 @@
 
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <cmath> 
 
 using namespace std; 
 
 vector<double> getFunction(vector<double> &y) {
 
-	vector<double> f(2); 
+	vector<double> f(y.size()); 
 
-	f[0] = sin(y[0]); 
+	for (int i=0; i<y.size(); i++) {
 
-	f[1] = cos(y[1]); 
+		f[i] = -(i+1) * pow(y[i], 2); 
 
+	}
+
+	return f; 
 }
 
 vector<vector<double>> getJacobian(vector<double> &y) {
 
-	vector<vector<double>> J(2, vector<double>(2)); 
-	J[0][0] = cos(y[0]); 
-	J[0][1] = 0; 
-	J[1][0] = 0; 
-	J[1][1] = -sin(y[1]); 
+	vector<vector<double>> J(y.size(), vector<double>(y.size()));
+
+	for (int i=0; i<y.size(); i++) {
+
+		J[i][i] = -2*(i+1)*y[i]; 
+
+	} 
 
 	return J; 
 
@@ -33,14 +39,21 @@ vector<vector<double>> getJacobian(vector<double> &y) {
 
 int main() {
 
-	int N = 1000; 
-	double tend = 1; 
+	int N = 100; 
+	double tend = 10; 
+	int Neq = 50; 
 
 	vector<double> t = linspace(0, tend, N+1); 
 
-	vector<vector<double>> y(N+1, vector<double>(2)); 
+	vector<vector<double>> y(N+1, vector<double>(Neq)); 
+	for (int i=0; i<Neq; i++) {
 
-	vector<vector<double>> I = Identity(2); 
+		y[0][i] = (double) (i+1)/Neq;  
+		// y[0][i] = 1; 
+
+	}
+
+	vector<vector<double>> I = Identity(Neq); 
 
 	for (int i=1; i<N+1; i++) {
 
@@ -56,6 +69,31 @@ int main() {
 		// rhs 
 		vector<double> b = y[i-1] + f*dt - J*y[i-1]; 
 
+		int status = gauss_elim(Neq, A, y[i], b); 
+
+		if (status != 0) cout << "linear solver error" << endl; 
+
 	}
+
+	ofstream file; 
+	file.open("out"); 
+
+	for (int i=0; i<N+1; i++) {
+
+		file << t[i] << " "; 
+
+		for (int j=0; j<Neq; j++) {
+
+			file << y[i][j]; 
+
+			if (j != Neq - 1) file << " "; 
+
+		}
+
+		file << endl; 
+
+	}
+
+	file.close(); 
 
 }
