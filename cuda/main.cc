@@ -43,9 +43,9 @@ int main() {
 	Timer timer; 
 	timer.start(); 
 
-	int N = 500; 
-	double tend = 10; 
-	int Neq = 2500; 
+	int N = 1000; 
+	double tend = 1; 
+	int Neq = 100; 
 
 	vector<double> t = linspace(0, tend, N+1); 
 
