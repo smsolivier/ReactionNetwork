@@ -2,6 +2,7 @@
 #include "helper.hh"
 #include "table.hh"
 #include "LinearAlgebra.hh"
+#include "Timer.hh"
 
 #include <vector>
 #include <iostream>
@@ -39,9 +40,12 @@ vector<vector<double>> getJacobian(vector<double> &y) {
 
 int main() {
 
-	int N = 100; 
+	Timer timer; 
+	timer.start(); 
+
+	int N = 500; 
 	double tend = 10; 
-	int Neq = 50; 
+	int Neq = 2500; 
 
 	vector<double> t = linspace(0, tend, N+1); 
 
@@ -67,7 +71,8 @@ int main() {
 		vector<vector<double>> A = I - J; 
 
 		// rhs 
-		vector<double> b = y[i-1] + f*dt - J*y[i-1]; 
+		// vector<double> b = y[i-1] + f*dt - J*y[i-1]; 
+		vector<double> b = y[i-1] + f*dt - MVP_GPU(J, y[i-1]); 
 
 		int status = gauss_elim(Neq, A, y[i], b); 
 
@@ -95,5 +100,7 @@ int main() {
 	}
 
 	file.close(); 
+
+	timer.stop(); 
 
 }
