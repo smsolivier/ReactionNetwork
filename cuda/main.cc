@@ -43,7 +43,7 @@ int main() {
 	Timer timer; 
 	timer.start(); 
 
-	int N = 1000; 
+	int N = 100000; 
 	double tend = 1; 
 	int Neq = 100; 
 
@@ -71,8 +71,8 @@ int main() {
 		vector<vector<double>> A = I - J; 
 
 		// rhs 
-		// vector<double> b = y[i-1] + f*dt - J*y[i-1]; 
-		vector<double> b = y[i-1] + f*dt - MVP_GPU(J, y[i-1]); 
+		vector<double> b = y[i-1] + f*dt - J*y[i-1]; 
+		// vector<double> b = y[i-1] + f*dt - MVP_GPU(J, y[i-1]); 
 
 		int status = gauss_elim(Neq, A, y[i], b); 
 
